@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"    # MQTT
+      - "9001:9001"    # WebSockets (optional)
+      - "8883:8883"    # MQTT over TLS (if configured)
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/passwordfile:/mosquitto/config/passwordfile
+      - ./mosquitto/certs:/mosquitto/config/certs
+    networks:
+      - iot-network
+
+  flask-server:
+    build: ./flask_app
+    container_name: flask-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=user1
+      - MQTT_PASSWORD=password1
+    volumes:
+      - ./flask_app:/app
+    networks:
+      - iot-network
+
+  data-simulator:
+    build: ./data_simulator
+    container_name: data-simulator
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=user1
+      - MQTT_PASSWORD=password1
+      - PUBLISH_TOPIC=plant/soil_humidity
+    networks:
+      - iot-network
+
+  mobile-client:
+    image: nginx:alpine
+    container_name: mobile-client
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./flask_app/index.html:/usr/share/nginx/html/index.html
+    depends_on:
+      - flask-server
+    networks:
+      - iot-network
+
+networks:
+  iot-network:
+    driver: bridge
