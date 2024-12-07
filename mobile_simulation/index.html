@@ -7,18 +7,37 @@
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { text-align: center; }
         canvas { max-width: 100%; height: auto; }
+        div { display: flex;flex-direction: column; align-items: center;}
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
     <h1>Soil Humidity History</h1>
     <canvas id="humidityChart"></canvas>
+    <div id="dataContainer">
+        <ul id="data-list"></ul>
+    </div>
 
     <script>
+        let chartInstance = null; // Store chart instance globally
+
         async function fetchData() {
             try {
-                const response = await fetch('/data');
+                const response = await fetch('http://localhost:5000/data', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
                 const data = await response.json();
+                const list = document.getElementById('data-list');
+                list.innerHTML = ''; // Clear existing data
+                data.forEach(entry => {
+                    const item = document.createElement('li');
+                    item.textContent = `${new Date(entry.timestamp).toLocaleString()}: ${entry.humidity.toFixed(2)}%`;
+                    list.appendChild(item);
+                });
                 return data.map(entry => ({
                     x: new Date(entry.timestamp),
                     y: entry.humidity
@@ -32,7 +51,13 @@
         async function renderChart() {
             const data = await fetchData();
             const ctx = document.getElementById('humidityChart').getContext('2d');
-            const chart = new Chart(ctx, {
+            // Destroy the previous chart instance if it exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Create a new chart instance
+            chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     datasets: [{

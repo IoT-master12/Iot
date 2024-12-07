@@ -19,7 +19,8 @@ class SoilData(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
     humidity = db.Column(db.Float, nullable=False)
 
-db.create_all()
+with app.app_context():
+    db.create_all()
 
 # MQTT configuration from environment variables
 MQTT_BROKER = os.getenv('MQTT_BROKER', 'mosquitto')
@@ -36,14 +37,18 @@ def on_connect(client, userdata, flags, rc):
         print(f"Failed to connect, return code {rc}")
 
 def on_message(client, userdata, msg):
-    try:
-        humidity = float(msg.payload.decode())
-        data = SoilData(timestamp=datetime.datetime.utcnow(), humidity=humidity)
-        db.session.add(data)
-        db.session.commit()
-        print(f"Received and stored humidity: {humidity}%")
-    except ValueError:
-        print("Received invalid humidity data")
+    with app.app_context():  # Push the application context
+        try:
+            humidity = float(msg.payload.decode())
+            data = SoilData(timestamp=datetime.datetime.utcnow(), humidity=humidity)
+            db.session.add(data)
+            db.session.commit()
+            print(f"Received and stored humidity: {humidity}%")
+        except ValueError:
+            print("Received invalid humidity data")
+        except Exception as e:
+            print(f"Error storing humidity data: {e}")
+
 
 mqtt_client = mqtt.Client()
 if MQTT_USERNAME and MQTT_PASSWORD:

@@ -5,7 +5,7 @@ mobile-client:
     ports:
       - "8080:80"
     volumes:
-      - ./flask_app/index.html:/usr/share/nginx/html/index.html
+      - ./mobile_simulation/index.html:/usr/share/nginx/html/index.html
     depends_on:
       - flask-server
     networks:

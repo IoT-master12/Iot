@@ -7,12 +7,9 @@ services:
     restart: unless-stopped
     ports:
       - "1883:1883"    # MQTT
-      - "9001:9001"    # WebSockets (optional)
-      - "8883:8883"    # MQTT over TLS (if configured)
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./mosquitto/passwordfile:/mosquitto/config/passwordfile
-      - ./mosquitto/certs:/mosquitto/config/certs
     networks:
       - iot-network
 
@@ -56,7 +53,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./flask_app/index.html:/usr/share/nginx/html/index.html
+      - ./mobile_simulation/index.html:/usr/share/nginx/html/index.html
     depends_on:
       - flask-server
     networks:
