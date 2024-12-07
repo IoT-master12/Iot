@@ -35,7 +35,7 @@ services:
       - iot-network
 
   data-simulator:
-    build: ./data_simulator
+    build: ./hardware_simulations
     container_name: data-simulator
     restart: unless-stopped
     depends_on:
